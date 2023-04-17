@@ -223,6 +223,7 @@ int main(){
         for (enemy_iter = 0; enemy_iter < 5; enemy_iter++) {
             if (bullet.x > opponents[enemy_iter].x && bullet.x < opponents[enemy_iter].x + 80 && bullet.y < opponents[enemy_iter].y + 20) {
                 opponents[enemy_iter].hp -= 1;
+                //lista  z przeciwnikami 
                 if (!opponents[enemy_iter].hp) {
                     opponents[enemy_iter].x = -100;
                     opponents[enemy_iter].y = -100;
