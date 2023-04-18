@@ -133,9 +133,22 @@ int main(){
         return -1;
     }
 
-
 	int enemy_iter; // ITERATOR TABLICY WROGOW
 
+    //Ekran startowy gry 
+    int kiszka = 1;
+    while (kiszka) {  // prostokat, jeżeli (MyszkaX > ButtonX) Oraz (MyszkaY > ButtonY) Oraz (MyszkaX < ButtonX+ButtonWidth) Oraz (MyszkaY < ButtonY+ButtonHeight) Oraz (LewyPrzyciskMyszkiNacisniety) wtedy ...
+        al_get_keyboard_state(&keyboard_state);
+        al_clear_to_color(bg_color); //ustawia tlo
+        al_draw_filled_rectangle(SCREEN_WIDTH / 2 - 300, SCREEN_HEIGHT / 2 - 50, SCREEN_WIDTH / 2 + 300, SCREEN_HEIGHT / 2 + 100, al_map_rgb(220, 200, 220));
+        al_draw_text(font, al_map_rgb(0, 0, 0), SCREEN_WIDTH / 2 - 40, SCREEN_HEIGHT / 2 + 30, ALLEGRO_ALIGN_CENTER, "Nacisnij ENTER by rozpoczac gre...");
+        if (al_key_down(&keyboard_state, ALLEGRO_KEY_ENTER)) {
+            kiszka = 0;
+        }
+
+        al_flip_display();  //odswieza ekran
+    }
+	
     while (1){
 
         al_clear_to_color(bg_color);
