@@ -10,4 +10,4 @@ typedef struct Enemy {
     float speed;
 } Enemy;
 
-void initializeOpponents(Enemy* opponents, Enemy* opponents1, Enemy* opponents2);
+Enemy* initializeOpponents(int lvl);
