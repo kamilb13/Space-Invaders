@@ -1,4 +1,4 @@
-﻿#include <allegro5/allegro_font.h>
+#include <allegro5/allegro_font.h>
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_primitives.h>
 #include <stdio.h>
@@ -6,6 +6,7 @@
 #include <allegro5/allegro_image.h>
 #include <stdbool.h>
 #include "opponents.h"
+#include <time.h>
 
 #define SCREEN_WIDTH 1280   
 #define SCREEN_HEIGHT 780   
@@ -42,10 +43,12 @@ typedef struct Bullet {
 void startFrame(int* start_window, ALLEGRO_KEYBOARD_STATE* keyboard_state, ALLEGRO_FONT* font, ALLEGRO_COLOR bg_color);
 //void gameFrame(ALLEGRO_TIMER* timer, ALLEGRO_COLOR bg_color, ALLEGRO_KEYBOARD_STATE* keyboard_state, Ship* ship, Bullet* bullet, ALLEGRO_COLOR bullet_color, int* enemy_iter, Enemy* opponents, float* enemy_move, ALLEGRO_BITMAP* enemy_bitmap, ALLEGRO_BITMAP* bitmap);
 void drawBullet(Bullet* bullet, ALLEGRO_COLOR bullet_color);
+void drawBulletEnemy(Bullet* bullet_enemy, ALLEGRO_COLOR bullet_color_enemy);
 void checkCollision(Bullet* bullet, Enemy* enemy);
 void shipMove(Ship* ship, Bullet* bullet, ALLEGRO_KEYBOARD_STATE* keyboard_state, ALLEGRO_COLOR bg_color);
 int checkEnemy(Enemy* opponents);
 void endFrame(ALLEGRO_FONT* font, ALLEGRO_KEYBOARD_STATE* keyboard_state);
+void checkEnemyBulletColision(Bullet* bullet_enemy, Ship* ship);
 
 int main() {
     // INICJACJA GŁÓWNYCH ELEMENTÓW ALLEGRO 5
@@ -61,6 +64,7 @@ int main() {
     ship.y = SCREEN_HEIGHT - 100;
     ship.vx = 0.5;
     ship.dmg = 1;
+    ship.hp = 3;
 
 
     // DEKLARACJA I INICJACJA WARTOŚCI POCISKU WYSTRZELIWANEGO PRZEZ GRACZA
@@ -72,13 +76,19 @@ int main() {
     bullet.bullet_size = 10;
     bullet.bullet_active = false;
 
-    Enemy* opponents = (Enemy*)calloc(5, sizeof(Enemy));
-    Enemy* level2= NULL;
-    Enemy* level3 = NULL;
+    // DODAC METEORYTY :)
+    Bullet bullet_enemy;
+    bullet_enemy.x = 100;
+    bullet_enemy.y = -10;
+    bullet_enemy.vx = 0;
+    bullet_enemy.vy = 0.5;
+    bullet_enemy.bullet_size = 10;
+    bullet_enemy.bullet_active = false;
 
-    initializeOpponents(&opponents, level2, level3);
+    int level = 1;
+    
 
-    printf("%p", opponents);
+    Enemy* opponents = initializeOpponents(level);
 
     // DEKLARACJA I INICJACJA OKNA GRY
     ALLEGRO_DISPLAY* display = al_create_display(SCREEN_WIDTH, SCREEN_HEIGHT);
@@ -87,14 +97,16 @@ int main() {
     // DEKLARACJA I INICJACJA KOLORÓW UŻYWANYCH DO RYSOWANIA OBIEKTÓW
     ALLEGRO_COLOR bg_color = al_map_rgb(0, 0, 0);
     ALLEGRO_COLOR bullet_color = al_map_rgb(0, 255, 0);
+    ALLEGRO_COLOR bullet_color_enemy = al_map_rgb(255, 0, 0);
+
 
     // DEKLARACJA 
     ALLEGRO_KEYBOARD_STATE keyboard_state;
     ALLEGRO_FONT* font = al_create_builtin_font();
 
     // ŁADOWANIE GRAFIK REPREZENTUJĄCYCH STATKI KOSMICZNE
-    ALLEGRO_BITMAP* bitmap = al_load_bitmap("C:/Users/kamil/Desktop/player.png");
-    ALLEGRO_BITMAP* enemy_bitmap = al_load_bitmap("C:/Users/kamil/Desktop/ufo.png");
+    ALLEGRO_BITMAP* bitmap = al_load_bitmap("C:/Users/PC/Desktop/space-invaders/player.png");
+    ALLEGRO_BITMAP* enemy_bitmap = al_load_bitmap("C:/Users/PC/Desktop/space-invaders/ufo.png"); //C:\Users\PC\Desktop\space-invaders
 
     // DEKLARACJA I INICJACJA "STOPERA"
     ALLEGRO_TIMER* timer = NULL;
@@ -116,6 +128,8 @@ int main() {
         return -1;
     }
 
+    srand(time(NULL));
+
     // DEKLARACJA I INICJACJA DODATKOWYCH ZMIENNYCH
     int enemy_iter;                 // Iterator tablicy wrogów
     float enemy_move = 0;           // Zmienna pomocnicza wykorzystywana do ruchu przeciwników
@@ -130,10 +144,8 @@ int main() {
     // WYSTARTOWANIE TIMERA
     al_start_timer(timer);
 
+    int shoot = 0;
 
-    // GŁÓWNA PĘTLA GRY
-    //gameFrame(timer, bg_color, &keyboard_state, &ship, &bullet, bullet_color, &enemy_iter, opponents, &enemy_move, enemy_bitmap, bitmap);
-    //gameFrame(timer, bg_color, &keyboard_state, &ship, &bullet, bullet_color, &enemy_iter, opponents, &enemy_move, enemy_bitmap, bitmap);
     
     do {
         // SPRAWDZENIE
@@ -148,11 +160,21 @@ int main() {
             // Rysowanie pocisku
             drawBullet(&bullet, bullet_color);
 
-           // for (enemy_iter = 0; enemy_iter < 5; enemy_iter++) { 
-               // checkCollision(&bullet, &(opponents[enemy_iter]));     
-            //}
+            shoot = rand() % 5;
+            if(!bullet_enemy.bullet_active){
+                bullet_enemy.x = opponents[shoot].x;
+                bullet_enemy.y = opponents[shoot].y;
+                bullet_enemy.bullet_active = true;
+            }
 
-            checkCollision(&bullet, opponents);
+            drawBulletEnemy(&bullet_enemy, bullet_color_enemy);
+            checkEnemyBulletColision(&bullet_enemy, &ship);
+
+       
+            if(checkEnemy(opponents)){
+                checkCollision(&bullet, opponents);
+            }
+            
 
             if (enemy_move > 100 || enemy_move < -100) {
                 for (enemy_iter = 0; enemy_iter < 5; enemy_iter++) {
@@ -161,11 +183,13 @@ int main() {
             }
 
             for (enemy_iter = 0; enemy_iter < 5; enemy_iter++) {
-                //opponents[enemy_iter].x += opponents[enemy_iter].speed;
+                opponents[enemy_iter].x += opponents[enemy_iter].speed;
                 if (opponents[enemy_iter].hp > 0) {
                     al_draw_bitmap(enemy_bitmap, opponents[enemy_iter].x, opponents[enemy_iter].y, 0);
                 }
             }
+
+
 
             enemy_move += opponents[0].speed;
             enemy_move += opponents[1].speed;
@@ -173,7 +197,15 @@ int main() {
             enemy_move += opponents[3].speed;
             enemy_move += opponents[4].speed;
 
-            if(checkEnemy(opponents) == 0) gameLoop = 0;
+            if (checkEnemy(opponents) == 0 && level == 3) {
+                opponents = initializeOpponents(1);
+                gameLoop = 0;
+                break;
+            }
+            else if (checkEnemy(opponents) == 0) {
+                level++;
+                opponents = initializeOpponents(level);
+            }
             al_draw_bitmap(bitmap, ship.x, ship.y, 0);
             al_flip_display();
         }
@@ -207,7 +239,7 @@ void endFrame(ALLEGRO_FONT* font, ALLEGRO_KEYBOARD_STATE* keyboard_state) {
         //puts("bambaryla");
         al_get_keyboard_state(keyboard_state);
         al_draw_filled_rectangle(SCREEN_WIDTH / 2 - 300, SCREEN_HEIGHT / 2 - 50, SCREEN_WIDTH / 2 + 300, SCREEN_HEIGHT / 2 + 100, al_map_rgb(220, 200, 220));
-        al_draw_text(font, al_map_rgb(0, 0, 0), SCREEN_WIDTH / 2 - 40, SCREEN_HEIGHT / 2 + 30, ALLEGRO_ALIGN_CENTER, "Koniec gry bialasku...");
+        al_draw_text(font, al_map_rgb(0, 0, 0), SCREEN_WIDTH / 2 - 40, SCREEN_HEIGHT / 2 + 30, ALLEGRO_ALIGN_CENTER, "Koniec gry...");
         al_flip_display();
         if (al_key_down(keyboard_state, ALLEGRO_KEY_ENTER)) {
             puts("Koniec ;)");
@@ -217,8 +249,8 @@ void endFrame(ALLEGRO_FONT* font, ALLEGRO_KEYBOARD_STATE* keyboard_state) {
 }
 
 int checkEnemy(Enemy* opponents) {
-    int check = 0; 
-    for(int i = 0; i < 5; i++) check = opponents[i].hp > 0 ? ++check : check;
+    int check = 0;
+    for (int i = 0; i < 5; i++) check = opponents[i].hp > 0 ? ++check : check;
     return check;
 
     /*
@@ -248,26 +280,36 @@ void drawBullet(Bullet* bullet, ALLEGRO_COLOR bullet_color) {
     }
 }
 
-/*void checkCollision(Bullet* bullet, Enemy* enemy){
-    if (bullet->x > enemy->x && bullet->x < enemy->x + 80 && bullet->y < enemy->y + 20 && bullet->y > enemy->y) {
-        enemy->hp -= 1;
-        //lista  z przeciwnikami
-        if (!enemy->hp) {
-            enemy->x = -100;
-            enemy->y = -100;
+void drawBulletEnemy(Bullet* bullet_enemy, ALLEGRO_COLOR bullet_color_enemy) {
+    // Rysowanie pocisku
+    if (bullet_enemy->bullet_active) {
+
+        al_draw_filled_rectangle(bullet_enemy->x, bullet_enemy->y, bullet_enemy->x + bullet_enemy->bullet_size, bullet_enemy->y + bullet_enemy->bullet_size, bullet_color_enemy);
+
+        // Aktualizacja pozycji pocisku przeciwnika
+        bullet_enemy->bullet_active = true;
+        if (bullet_enemy->bullet_active) {
+            bullet_enemy->y += bullet_enemy->vy;
         }
-
-        bullet->bullet_active = false;
-        bullet->x = -10;
-        bullet->y = -10;
     }
-}*/
 
-void checkCollision(Bullet* bullet, Enemy* enemy){
+    // Sprawdzenie, czy pocisk przeciwnika wyleciał poza ekran
+    if (bullet_enemy->y > SCREEN_HEIGHT) {
+        bullet_enemy->bullet_active = false;
+    }
+}
 
+void checkEnemyBulletColision(Bullet* bullet_enemy, Ship* ship) {
+    //printf("%d", );
+    if (bullet_enemy->x < ship->x + 30 && bullet_enemy->x > ship->x && bullet_enemy->y < ship->y + 30 && bullet_enemy->y > ship->y) {
+        printf("trafiony zostalem");
+        // ship->hp--;
+    }
+}
+
+void checkCollision(Bullet* bullet, Enemy* enemy) {
     int iter;
-
-    for(iter = 0; iter < 5; iter++){
+    for (iter = 0; iter < 5; iter++) {
         if (bullet->x > enemy[iter].x && bullet->x < enemy[iter].x + 80 && bullet->y < enemy[iter].y + 20 && bullet->y > enemy[iter].y) {
             enemy[iter].hp -= 1;
             //lista  z przeciwnikami
@@ -283,7 +325,7 @@ void checkCollision(Bullet* bullet, Enemy* enemy){
     }
 }
 
-void shipMove(Ship* ship, Bullet* bullet, ALLEGRO_KEYBOARD_STATE* keyboard_state, ALLEGRO_COLOR bg_color){
+void shipMove(Ship* ship, Bullet* bullet, ALLEGRO_KEYBOARD_STATE* keyboard_state, ALLEGRO_COLOR bg_color) {
     al_get_keyboard_state(keyboard_state);
     if (al_key_down(keyboard_state, ALLEGRO_KEY_LEFT)) {
         ship->x -= ship->vx;
@@ -307,21 +349,3 @@ void shipMove(Ship* ship, Bullet* bullet, ALLEGRO_KEYBOARD_STATE* keyboard_state
     }
 }
 
-/*
-void level(hp, dmg) {
-    // pozcyje sa ustalone z gory
-
-}
-
-int level1[] = {5, 0, 0};
-int level2[] = {4, 2, 0};
-int level3[] = {4, 2, 8};
-
-void level_2() {
-
-}
-
-void level_3() {
-
-} 
-*/
