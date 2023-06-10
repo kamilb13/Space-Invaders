@@ -8,6 +8,7 @@ typedef struct Enemy {
     float hp;
     float dmg;
     float speed;
+    short type;
 } Enemy;
 
 Enemy* initializeOpponents(int lvl);
